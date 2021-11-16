@@ -10,15 +10,14 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
-	// limits "github.com/gin-contrib/size".
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/marmotedu/component-base/pkg/core"
 	"github.com/marmotedu/component-base/pkg/version"
 	ginprometheus "github.com/zsais/go-gin-prometheus"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/marmotedu/iam/internal/pkg/middleware"
 	"github.com/marmotedu/iam/pkg/log"
@@ -94,6 +93,8 @@ func (s *GenericAPIServer) Setup() {
 func (s *GenericAPIServer) InstallMiddlewares() {
 	// necessary middlewares
 	s.Use(middleware.RequestID())
+	s.Use(middleware.Context())
+	// s.Use(limits.RequestSizeLimiter(10))
 
 	// install custom middlewares
 	for _, m := range s.middlewares {
@@ -107,11 +108,6 @@ func (s *GenericAPIServer) InstallMiddlewares() {
 		log.Infof("install middleware: %s", m)
 		s.Use(mw)
 	}
-
-	s.Use(middleware.Context())
-	// s.Use(gin.Logger())
-	// s.Use(limits.RequestSizeLimiter(10))
-	// s.GET("/debug/vars", expvar.Handler())
 }
 
 /*
@@ -127,48 +123,61 @@ func (s *GenericAPIServer) PrepareRun() preparedGenericAPIServer {
 
 // Run spawns the http server. It only returns when the port cannot be listened on initially.
 func (s *GenericAPIServer) Run() error {
+	// For scalability, use custom HTTP configuration mode here
 	s.insecureServer = &http.Server{
 		Addr:    s.InsecureServingInfo.Address,
 		Handler: s,
+		// ReadTimeout:    10 * time.Second,
+		// WriteTimeout:   10 * time.Second,
+		// MaxHeaderBytes: 1 << 20,
+
 	}
 
+	// For scalability, use custom HTTP configuration mode here
 	s.secureServer = &http.Server{
 		Addr:    s.SecureServingInfo.Address(),
 		Handler: s,
+		// ReadTimeout:    10 * time.Second,
+		// WriteTimeout:   10 * time.Second,
+		// MaxHeaderBytes: 1 << 20,
 	}
 
-	wg := sync.WaitGroup{}
+	var eg errgroup.Group
 
-	wg.Add(3)
 	// Initializing the server in a goroutine so that
 	// it won't block the graceful shutdown handling below
-	go func() {
-		defer wg.Done()
+	eg.Go(func() error {
 		log.Infof("Start to listening the incoming requests on http address: %s", s.InsecureServingInfo.Address)
 
 		if err := s.insecureServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err.Error())
+
+			return err
 		}
 
 		log.Infof("Server on %s stopped", s.InsecureServingInfo.Address)
-	}()
 
-	go func() {
-		defer wg.Done()
+		return nil
+	})
 
+	eg.Go(func() error {
 		key, cert := s.SecureServingInfo.CertKey.KeyFile, s.SecureServingInfo.CertKey.CertFile
 		if cert == "" || key == "" || s.SecureServingInfo.BindPort == 0 {
-			return
+			return nil
 		}
 
 		log.Infof("Start to listening the incoming requests on https address: %s", s.SecureServingInfo.Address())
 
 		if err := s.secureServer.ListenAndServeTLS(cert, key); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err.Error())
+
+			return err
 		}
 
 		log.Infof("Server on %s stopped", s.SecureServingInfo.Address())
-	}()
+
+		return nil
+	})
 
 	// Ping the server to make sure the router is working.
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -179,7 +188,9 @@ func (s *GenericAPIServer) Run() error {
 		}
 	}
 
-	wg.Wait()
+	if err := eg.Wait(); err != nil {
+		log.Fatal(err.Error())
+	}
 
 	return nil
 }
@@ -226,7 +237,7 @@ func (s *GenericAPIServer) ping(ctx context.Context) error {
 
 		// Sleep for a second to continue the next ping.
 		log.Info("Waiting for the router, retry in 1 second.")
-		time.Sleep(time.Second)
+		time.Sleep(1 * time.Second)
 
 		select {
 		case <-ctx.Done():

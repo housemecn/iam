@@ -378,7 +378,7 @@ function iam::release::package_iam_manifests_tarball() {
 
   local dst_dir="${release_stage}"
   mkdir -p "${dst_dir}"
-  cp ${src_dir}/* "${dst_dir}"
+  cp -r ${src_dir}/* "${dst_dir}"
   #cp "${src_dir}/iam-apiserver.yaml" "${dst_dir}"
   #cp "${src_dir}/iam-authz-server.yaml" "${dst_dir}"
   #cp "${src_dir}/iam-pump.yaml" "${dst_dir}"
@@ -465,7 +465,7 @@ function iam::release::create_tarball() {
 }
 
 function iam::release::install_github_release(){
-  GO111MODULE=off go get -u github.com/github-release/github-release
+  GO111MODULE=on go install github.com/github-release/github-release@latest
 }
 
 # Require the following tools:
@@ -486,7 +486,7 @@ function iam::release::verify_prereqs(){
   if [ -z "$(which git-chglog 2>/dev/null)" ]; then
     iam::log::info "'git-chglog' tool not installed, try to install it."
 
-    if ! go get github.com/git-chglog/git-chglog/cmd/git-chglog &>/dev/null; then
+    if ! go install github.com/git-chglog/git-chglog/cmd/git-chglog@latest &>/dev/null; then
       iam::log::error "failed to install 'git-chglog'"
       return 1
     fi
@@ -495,7 +495,7 @@ function iam::release::verify_prereqs(){
   if [ -z "$(which gsemver 2>/dev/null)" ]; then
     iam::log::info "'gsemver' tool not installed, try to install it."
 
-    if ! go get github.com/arnaud-deprez/gsemver &>/dev/null; then
+    if ! go install github.com/arnaud-deprez/gsemver@latest &>/dev/null; then
       iam::log::error "failed to install 'gsemver'"
       return 1
     fi
@@ -568,6 +568,6 @@ function iam::release::generate_changelog() {
 
   (set +o errexit git add ${IAM_ROOT}/CHANGELOG/CHANGELOG-${IAM_GIT_VERSION#v}.md)
   git commit -a -m "docs(changelog): add CHANGELOG-${IAM_GIT_VERSION#v}.md"
-  git push origin master # 最后将 CHANGELOG 也 push 上去
+  git push -f origin master # 最后将 CHANGELOG 也 push 上去
 }
 

@@ -6,66 +6,69 @@
 # Makefile helper functions for tools
 #
 
-DEP_TOOLS ?= swagger mockgen gotests gsemver golines go-junit-report git-chglog github-release coscmd go-mod-outdated golangci-lint protoc-gen-go cfssl addlicense goimports
-OTHER_TOOLS ?= depth go-callvis gothanks richgo rts
+TOOLS ?=$(BLOCKER_TOOLS) $(CRITICAL_TOOLS) $(TRIVIAL_TOOLS)
 
-tools.install: $(addprefix tools.install., $(DEP_TOOLS), ${OTHER_TOOLS})
+.PHONY: tools.install
+tools.install: $(addprefix tools.install., $(TOOLS))
+
+.PHONY: tools.install.%
 tools.install.%:
 	@echo "===========> Installing $*"
 	@$(MAKE) install.$*
 
+.PHONY: tools.verify.%
 tools.verify.%:
 	@if ! which $* &>/dev/null; then $(MAKE) tools.install.$*; fi
 
 .PHONY: install.swagger
 install.swagger:
-	@$(GO) get -u github.com/go-swagger/go-swagger/cmd/swagger
+	@$(GO) install github.com/go-swagger/go-swagger/cmd/swagger@latest
 
 .PHONY: install.golangci-lint
 install.golangci-lint:
-	@$(GO) get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	@$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.41.1
 	@golangci-lint completion bash > $(HOME)/.golangci-lint.bash
 	@if ! grep -q .golangci-lint.bash $(HOME)/.bashrc; then echo "source \$$HOME/.golangci-lint.bash" >> $(HOME)/.bashrc; fi
 
 .PHONY: install.go-junit-report
 install.go-junit-report:
-	@$(GO) get -u github.com/jstemmer/go-junit-report
+	@$(GO) install github.com/jstemmer/go-junit-report@latest
 
 .PHONY: install.gsemver
 install.gsemver:
-	@$(GO) get -u github.com/arnaud-deprez/gsemver
+	@$(GO) install github.com/arnaud-deprez/gsemver@latest
 
 .PHONY: install.git-chglog
 install.git-chglog:
-	@$(GO) get -u github.com/git-chglog/git-chglog/cmd/git-chglog
+	@$(GO) install github.com/git-chglog/git-chglog/cmd/git-chglog@latest
 
 .PHONY: install.github-release
 install.github-release:
-	@$(GO) get -u github.com/github-release/github-release
+	@$(GO) install github.com/github-release/github-release@latest
 
 .PHONY: install.coscmd
 install.coscmd:
-	@pip install coscmd
+	@if which pip &>/dev/null; then pip install coscmd; else pip3 install coscmd; fi
 
 .PHONY: install.golines
 install.golines:
-	@$(GO) get -u github.com/segmentio/golines
+	@$(GO) install github.com/segmentio/golines@latest
 
 .PHONY: install.go-mod-outdated
 install.go-mod-outdated:
-	@$(GO) get -u github.com/psampaz/go-mod-outdated
+	@$(GO) install github.com/psampaz/go-mod-outdated@latest
 
 .PHONY: install.mockgen
 install.mockgen:
-	@$(GO) get -u github.com/golang/mock/mockgen
+	@$(GO) install github.com/golang/mock/mockgen@latest
 
 .PHONY: install.gotests
 install.gotests:
-	@$(GO) get -u github.com/cweill/gotests/...
+	@$(GO) install github.com/cweill/gotests/gotests@latest
 
 .PHONY: install.protoc-gen-go
 install.protoc-gen-go:
-	@$(GO) get -u github.com/golang/protobuf/protoc-gen-go
+	@$(GO) install github.com/golang/protobuf/protoc-gen-go@latest
 
 .PHONY: install.cfssl
 install.cfssl:
@@ -73,28 +76,36 @@ install.cfssl:
 
 .PHONY: install.addlicense
 install.addlicense:
-	@$(GO) get -u github.com/marmotedu/addlicense
+	@$(GO) install github.com/marmotedu/addlicense@latest
 
 .PHONY: install.goimports
 install.goimports:
-	@$(GO) get -u golang.org/x/tools/cmd/goimports
+	@$(GO) install golang.org/x/tools/cmd/goimports@latest
 
 .PHONY: install.depth
 install.depth:
-	@$(GO) get -u github.com/KyleBanks/depth/cmd/depth
+	@$(GO) install github.com/KyleBanks/depth/cmd/depth@latest
 
 .PHONY: install.go-callvis
 install.go-callvis:
-	@$(GO) get -u github.com/ofabry/go-callvis
+	@$(GO) install github.com/ofabry/go-callvis@latest
 
 .PHONY: install.gothanks
 install.gothanks:
-	@$(GO) get -u github.com/psampaz/gothanks
+	@$(GO) install github.com/psampaz/gothanks@latest
 
 .PHONY: install.richgo
 install.richgo:
-	@$(GO) get -u github.com/kyoh86/richgo
+	@$(GO) install github.com/kyoh86/richgo@latest
 
 .PHONY: install.rts
 install.rts:
-	@$(GO) get -u github.com/galeone/rts/cmd/rts
+	@$(GO) install github.com/galeone/rts/cmd/rts@latest
+
+.PHONY: install.codegen
+install.codegen:
+	@$(GO) install ${ROOT_DIR}/tools/codegen/codegen.go
+
+.PHONY: install.kube-score
+install.kube-score:
+	@$(GO) install github.com/zegl/kube-score/cmd/kube-score@latest

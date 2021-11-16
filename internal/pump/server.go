@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/vmihailenco/msgpack"
+	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/marmotedu/iam/internal/pump/analytics"
 	"github.com/marmotedu/iam/internal/pump/config"
@@ -59,6 +59,7 @@ func (s preparedPumpServer) Run(stopCh <-chan struct{}) error {
 	ticker := time.NewTicker(time.Duration(s.secInterval) * time.Second)
 	defer ticker.Stop()
 
+	log.Info("Now run loop to clean data from redis")
 	for {
 		select {
 		case <-ticker.C:
@@ -146,7 +147,7 @@ func filterData(pump pumps.Pump, keys []interface{}) []interface{} {
 	newLenght := 0
 
 	for _, key := range filteredKeys {
-		decoded := key.(analytics.AnalyticsRecord)
+		decoded, _ := key.(analytics.AnalyticsRecord)
 		if pump.GetOmitDetailedRecording() {
 			decoded.Policies = ""
 			decoded.Deciders = ""

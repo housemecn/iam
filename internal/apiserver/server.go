@@ -13,8 +13,8 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 
-	cachev1 "github.com/marmotedu/iam/internal/apiserver/api/v1/cache"
 	"github.com/marmotedu/iam/internal/apiserver/config"
+	cachev1 "github.com/marmotedu/iam/internal/apiserver/controller/v1/cache"
 	"github.com/marmotedu/iam/internal/apiserver/store"
 	"github.com/marmotedu/iam/internal/apiserver/store/mysql"
 	genericoptions "github.com/marmotedu/iam/internal/pkg/options"
@@ -180,7 +180,11 @@ func buildExtraConfig(cfg *config.Config) (*ExtraConfig, error) {
 
 func (s *apiServer) initRedisStore() {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	s.gs.AddShutdownCallback(shutdown.ShutdownFunc(func(string) error {
+		cancel()
+
+		return nil
+	}))
 
 	config := &storage.Config{
 		Host:                  s.redisOptions.Host,

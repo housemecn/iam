@@ -102,7 +102,7 @@ $ sudo sed -i '/^bind.*/{s/bind/# bind/}' /etc/redis.conf
 $ sudo sed -i 's/^# requirepass.*$/requirepass iam59!z$/' /etc/redis.conf
 ```
 
-4. 因为我们上面配置了密码登陆，需要将protected-mode设置为no，关闭保护模式
+4. 因为我们上面配置了密码登录，需要将protected-mode设置为no，关闭保护模式
 
 ```
 $ sudo sed -i '/^protected-mode/{s/yes/no/}' /etc/redis.conf
@@ -115,7 +115,7 @@ $ sudo systemctl stop firewalld.service
 $ sudo systemctl disable firewalld.service
 ```
 
-### 启动并登陆Redis
+### 启动并登录Redis
 
 ```bash
 $ sudo redis-server /etc/redis.conf
@@ -159,9 +159,9 @@ $ sudo setenforce 0
 $ sudo sed -i 's/^SELINUX=.*$/SELINUX=disabled/' /etc/selinux/config # 永久关闭SELINUX
 ```
 
-4. 开启外网访问权限和登陆验证
+4. 开启外网访问权限和登录验证
 
-安装完MongoDB之后，默认情况下MongoDB没有开启外网访问权限和登陆验证，需要先开启这些功能，修改配置文件/etc/mongod.conf，设置`net.bindIp: 0.0.0.0`, `security.authorization: enabled`，执行如下命令：
+安装完MongoDB之后，默认情况下MongoDB没有开启外网访问权限和登录验证，需要先开启这些功能，修改配置文件/etc/mongod.conf，设置`net.bindIp: 0.0.0.0`, `security.authorization: enabled`，执行如下命令：
 
 ```bash
 $ sudo sed -i '/bindIp/{s/127.0.0.1/0.0.0.0/}' /etc/mongod.conf
@@ -178,7 +178,7 @@ $ sudo systemctl enable mongod # 设置开机启动
 $ sudo systemctl status mongod # 查看mongod运行状态，如果输出中包含active (running)字样说明mongod成功启动。
 ```
 
-6. 登陆MongoDB Shell
+6. 登录MongoDB Shell
 
 ```bash
 $ mongo --quiet "mongodb://127.0.0.1:27017"
@@ -205,7 +205,7 @@ Successfully added user: { "user" : "root", "roles" : [ "root" ] }
 1
 ```
 
-通过`use admin`指令切换到admin数据库。通过`db.auth("用户名"，"用户密码")`验证用户登陆权限，如果返回1表示验证成功，如果返回0表示验证失败。删除用户可以使用`db.dropUser("用户名")`。
+通过`use admin`指令切换到admin数据库。通过`db.auth("用户名"，"用户密码")`验证用户登录权限，如果返回1表示验证成功，如果返回0表示验证失败。删除用户可以使用`db.dropUser("用户名")`。
 
 创建用户参数说明：
 - user: 用户名。
@@ -226,7 +226,7 @@ Successfully added user: { "user" : "iam", "roles" : [ "dbOwner" ] }
 1
 ```
 
-创建完iam普通用户后，我们就可以通过iam用户登陆MongoDB：
+创建完iam普通用户后，我们就可以通过iam用户登录MongoDB：
 
 ```bash
 $ mongo --quiet mongodb://iam:'iam59!z$'@127.0.0.1:27017/iam_analytics?authSource=iam_analytics
@@ -278,17 +278,17 @@ $ bash
 
 安装完MariaDB数据库之后，需要在MariaDB数据库中创建IAM系统需要的数据库、表和存储过程，创建SQL语句保存在IAM代码仓库中的configs/iam.sql文件中，创建步骤如下：
 
-1) 登陆数据库并创建iam用户
+1) 登录数据库并创建iam用户
 
 ```bash
 $ cd $IAM_ROOT
-$ mysql -h127.0.0.1 -P3306 -uroot -p'iam59!z$' # 连接 MariaDB，-h 指定主机，-P 指定监听端口，-u 指定登陆用户，-p 指定登录密码
+$ mysql -h127.0.0.1 -P3306 -uroot -p'iam59!z$' # 连接 MariaDB，-h 指定主机，-P 指定监听端口，-u 指定登录用户，-p 指定登录密码
 MariaDB [(none)]> grant all on iam.* TO iam@127.0.0.1 identified by 'iam59!z$';
 Query OK, 0 rows affected (0.000 sec)
 MariaDB [(none)]> flush privileges;
 Query OK, 0 rows affected (0.000 sec)
 ```
-2) 用iam用户登陆mysql，执行iam.sql文件，创建iam数据库
+2) 用iam用户登录mysql，执行iam.sql文件，创建iam数据库
 ```bash
 $ mysql -h127.0.0.1 -P3306 -uiam -p'iam59!z$'
 MariaDB [(none)]> source configs/iam.sql;
@@ -969,12 +969,12 @@ $ make build BINS=iamctl
 $ cp _output/platforms/linux/amd64/iamctl $HOME/bin
 ```
 
-2) 生成并安装iamctl的配置文件（config）
+2) 生成并安装iamctl的配置文件（iamctl.yaml）
 
 ```bash
-$ ./scripts/genconfig.sh scripts/install/environment.sh configs/config > config
+$ ./scripts/genconfig.sh scripts/install/environment.sh configs/iamctl.yaml > iamctl.yaml 
 $ mkdir -p $HOME/.iam
-$ mv config $HOME/.iam
+$ mv iamctl.yaml $HOME/.iam
 ```
 
 因为iamctl是一个客户端工具，我们可能会在多台机器上运行，为了简化部署iamctl工具的复杂度，我们可以把config配置文件中跟CA认证相关的CA文件内容，用base64加密后，放置在config配置文件中，config文件中的配置项client-certificate、client-key、certificate-authority分别可用如下配置项替换client-certificate-data、client-key-data、certificate-authority-data，这些配置项的值，可以通过将CA文件使用base64加密获得。
@@ -1023,7 +1023,7 @@ clientVersion:
   gitCommit: 1d682b0317396347b568a3ef366c1c54b3b0186b
   gitTreeState: dirty
   gitVersion: v0.6.1-5-g1d682b0
-  goVersion: go1.16.2
+  goVersion: go1.17
   platform: linux/amd64
 serverVersion:
   buildDate: "2021-04-07T22:30:53Z"
@@ -1031,7 +1031,7 @@ serverVersion:
   gitCommit: bde163964b8c004ebb20ca4abd8a2ac0cd1f71ad
   gitTreeState: dirty
   gitVersion: bde1639
-  goVersion: go1.16.2
+  goVersion: go1.17
   platform: linux/amd64
 ```
 
@@ -1058,6 +1058,6 @@ $ cd /tmp/iam/ && ./scripts/install/install.sh iam::install::install_iam
 
 ## 课后练习
 
-1. 登陆MariaDB，查看iam.user、iam.policy、iam.secret（格式：数据库.表）表结构，理解每个字段的意思。
+1. 登录MariaDB，查看iam.user、iam.policy、iam.secret（格式：数据库.表）表结构，理解每个字段的意思。
 2. 调用iam-apiserver提供的API接口创建一个用户：`xuezhang`，并在该用户下创建policy和secret资源。最后调用iam-authz-server提供的`/v1/authz`接口进行资源鉴权。
 3. 使用iamctl工具创建用户、策略、密钥。

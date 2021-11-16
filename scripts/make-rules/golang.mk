@@ -73,13 +73,13 @@ go.clean:
 .PHONY: go.lint
 go.lint: tools.verify.golangci-lint
 	@echo "===========> Run golangci to lint source codes"
-	@golangci-lint run $(ROOT_DIR)/...
+	@golangci-lint run -c $(ROOT_DIR)/.golangci.yaml $(ROOT_DIR)/...
 
 .PHONY: go.test
 go.test: tools.verify.go-junit-report
 	@echo "===========> Run unit test"
 	@set -o pipefail;$(GO) test -race -cover -coverprofile=$(OUTPUT_DIR)/coverage.out \
-		-timeout=10m -short -v `go list ./...|\
+		-timeout=10m -shuffle=on -short -v `go list ./...|\
 		egrep -v $(subst $(SPACE),'|',$(sort $(EXCLUDE_TESTS)))` 2>&1 | \
 		tee >(go-junit-report --set-exit-code >$(OUTPUT_DIR)/report.xml)
 	@sed -i '/mock_.*.go/d' $(OUTPUT_DIR)/coverage.out # remove mock_.*.go files from test coverage
